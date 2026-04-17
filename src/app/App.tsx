@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router';
+import { HashRouter, Routes, Route, Navigate } from 'react-router';
 import DoctorDashboard from './components/DoctorDashboard';
 import PatientDashboard from './components/PatientDashboard';
 import PatientDashboardMobile from './components/PatientDashboardMobile';
@@ -45,14 +45,14 @@ function CheckInView() {
 export default function App() {
   return (
     <ViewProvider>
-      <BrowserRouter>
+      <HashRouter>
         <Routes>
           <Route path="/" element={<MainView />} />
           <Route path="/patient/:patientId" element={<PatientDetail />} />
           <Route path="/check-in" element={<CheckInView />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </BrowserRouter>
+      </HashRouter>
       <Toaster position="top-right" richColors />
     </ViewProvider>
   );
