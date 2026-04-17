@@ -7,9 +7,10 @@ interface QuickNotesProps {
   patientId: string;
   notes: ClinicalNote[];
   onAddNote: (patientId: string, text: string) => void;
+  hideList?: boolean;
 }
 
-export default function QuickNotes({ patientId, notes, onAddNote }: QuickNotesProps) {
+export default function QuickNotes({ patientId, notes, onAddNote, hideList = false }: QuickNotesProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [newNote, setNewNote] = useState('');
 
@@ -28,7 +29,12 @@ export default function QuickNotes({ patientId, notes, onAddNote }: QuickNotesPr
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <StickyNote className="w-4 h-4 text-gray-600" />
-          <span className="text-sm font-medium text-gray-700">Clinical Notes</span>
+          <span className="text-sm font-medium text-gray-700">
+            Clinical Notes
+            {hideList && patientNotes.length > 0 && (
+              <span className="ml-1.5 text-gray-500">({patientNotes.length})</span>
+            )}
+          </span>
         </div>
         {!isAdding && (
           <button
@@ -71,7 +77,7 @@ export default function QuickNotes({ patientId, notes, onAddNote }: QuickNotesPr
         </div>
       )}
 
-      {patientNotes.length > 0 && (
+      {!hideList && patientNotes.length > 0 && (
         <div className="space-y-1.5 max-h-32 overflow-y-auto">
           {patientNotes.map((note) => (
             <div key={note.id} className="text-xs bg-yellow-50 border border-yellow-200 rounded p-2">

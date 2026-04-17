@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Calendar, Activity, MessageSquare, Heart, Menu, X, Pill, User, Home, FileText, Sparkles, ShieldCheck, AlertTriangle, Phone, Check } from 'lucide-react';
+import { Calendar, Activity, Heart, Menu, X, User, Home, FileText, Sparkles, ShieldCheck, AlertTriangle, Phone, Check } from 'lucide-react';
 import { format } from 'date-fns';
 import AIChatAssistant from './AIChatAssistant';
 import { mockCheckIns, mockVitals } from '../data/mockData';
@@ -13,7 +13,6 @@ export default function PatientDashboardMobile() {
   const [showChat, setShowChat] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [activeTab, setActiveTab] = useState<'home' | 'records' | 'checkin'>('home');
-  const [initialQuestion, setInitialQuestion] = useState('');
   const [escalation, setEscalation] = useState<null | 'menu' | 'sent'>(null);
   const navigate = useNavigate();
 

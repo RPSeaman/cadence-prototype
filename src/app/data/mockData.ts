@@ -4,7 +4,7 @@ export interface Patient {
   age: number;
   mrn: string; // Medical Record Number
   condition: string;
-  lastVisit: string;
+  lastVisit?: string;
   nextScheduled?: string;
   riskLevel: 'high' | 'medium' | 'low';
   avatar: string;
@@ -39,6 +39,7 @@ export interface DoctorFlag {
   message: string;
   timestamp: string;
   recommendation: string;
+  bullets: string[];
 }
 
 export interface VitalReading {
@@ -136,7 +137,7 @@ export const mockPatients: Patient[] = [
     riskLevel: 'low',
     avatar: 'DP',
     ccmRpmEligible: true,
-    lastCheckIn: '2026-04-02' // 7 days silent
+    lastCheckIn: '2026-04-08'
   },
   {
     id: 'p5',
@@ -150,6 +151,107 @@ export const mockPatients: Patient[] = [
     avatar: 'LT',
     ccmRpmEligible: true,
     lastCheckIn: '2026-04-06' // 3 days silent — non-responsive threshold
+  },
+  {
+    id: 'p6',
+    name: 'Maria Gonzalez',
+    age: 63,
+    mrn: 'MRN-381047',
+    condition: 'Type 2 Diabetes - Controlled',
+    lastVisit: '2026-03-22',
+    nextScheduled: '2026-06-22',
+    riskLevel: 'low',
+    avatar: 'MG',
+    ccmRpmEligible: true,
+    lastCheckIn: '2026-04-09'
+  },
+  {
+    id: 'p7',
+    name: 'Robert Johnson',
+    age: 58,
+    mrn: 'MRN-492051',
+    condition: 'Hypertension - Stable',
+    lastVisit: '2026-03-05',
+    nextScheduled: '2026-06-05',
+    riskLevel: 'low',
+    avatar: 'RJ',
+    ccmRpmEligible: true,
+    lastCheckIn: '2026-04-09'
+  },
+  {
+    id: 'p8',
+    name: 'Dorothy Lewis',
+    age: 74,
+    mrn: 'MRN-659182',
+    condition: 'CHF - Monitored',
+    lastVisit: '2026-03-18',
+    nextScheduled: '2026-05-02',
+    riskLevel: 'medium',
+    avatar: 'DL',
+    ccmRpmEligible: true,
+    lastCheckIn: '2026-04-08'
+  },
+  {
+    id: 'p9',
+    name: 'Kevin Ahmed',
+    age: 49,
+    mrn: 'MRN-720394',
+    condition: 'Hyperlipidemia',
+    lastVisit: '2026-02-11',
+    nextScheduled: '2026-08-11',
+    riskLevel: 'low',
+    avatar: 'KA',
+    ccmRpmEligible: false,
+    lastCheckIn: '2026-04-09'
+  },
+  {
+    id: 'p10',
+    name: 'Patricia Nguyen',
+    age: 68,
+    mrn: 'MRN-830215',
+    condition: 'COPD - Stable',
+    lastVisit: '2026-03-11',
+    nextScheduled: '2026-06-11',
+    riskLevel: 'medium',
+    avatar: 'PN',
+    ccmRpmEligible: true,
+    lastCheckIn: '2026-04-09'
+  },
+  {
+    id: 'p11',
+    name: 'Marcus Williams',
+    age: 55,
+    mrn: 'MRN-147823',
+    condition: 'Post-CABG - Stable',
+    lastVisit: '2026-02-28',
+    nextScheduled: '2026-05-28',
+    riskLevel: 'low',
+    avatar: 'MW',
+    ccmRpmEligible: true,
+    lastCheckIn: '2026-04-08'
+  },
+  {
+    id: 'p12',
+    name: 'Helen Bauer',
+    age: 71,
+    mrn: 'MRN-562901',
+    condition: 'Atrial Fibrillation - Controlled',
+    lastVisit: '2026-03-02',
+    nextScheduled: '2026-06-02',
+    riskLevel: 'medium',
+    avatar: 'HB',
+    ccmRpmEligible: true,
+    lastCheckIn: '2026-04-09'
+  },
+  {
+    id: 'p13',
+    name: 'Aisha Okafor',
+    age: 52,
+    mrn: 'MRN-910476',
+    condition: 'Hypertension - Stable',
+    riskLevel: 'low',
+    avatar: 'AO',
+    ccmRpmEligible: true
   }
 ];
 
@@ -248,28 +350,24 @@ export const mockFlags: DoctorFlag[] = [
     priority: 'urgent',
     message: 'Blood pressure trending upward despite medication compliance',
     timestamp: '2026-04-09T08:30:00',
-    recommendation: 'Consider: (1) Increase lisinopril to 20mg, (2) Order metabolic panel to check kidney function, (3) Schedule telehealth to discuss symptoms'
-  },
-  {
-    patientId: 'p2',
-    priority: 'review',
-    message: 'Patient had AI conversation about diet concerns and requested doctor review',
-    timestamp: '2026-04-09T09:20:00',
-    recommendation: 'AI Conversation Summary: Patient expressed concerns about managing carb intake while dining out. Asked about portion control strategies and whether current meal plan allows flexibility for social situations. Appears motivated but anxious about maintaining progress. Consider sending encouragement message or brief telehealth check-in to address concerns.'
+    recommendation: 'Consider: (1) Increase lisinopril to 20mg, (2) Order metabolic panel to check kidney function, (3) Schedule telehealth to discuss symptoms',
+    bullets: [
+      'BP 151/94 — climbing 5d; patient adherent to lisinopril',
+      'New orthostatic dizziness + afternoon headaches reported',
+      'Next step: titrate lisinopril, order BMP, telehealth this week'
+    ]
   },
   {
     patientId: 'p5',
     priority: 'non-responsive',
     message: 'Silent for 3 days — no check-in since Apr 6',
     timestamp: '2026-04-09T06:00:00',
-    recommendation: 'Patient has not completed scheduled check-ins. Silence in a hypertensive patient is a clinical signal worth escalating. Suggest: (1) automated outreach text, (2) nurse call if no response by EOD, (3) flag for in-person welfare check if 5+ days elapse.'
-  },
-  {
-    patientId: 'p4',
-    priority: 'non-responsive',
-    message: 'Silent for 7 days — no check-in since Apr 2',
-    timestamp: '2026-04-08T10:00:00',
-    recommendation: 'Extended silence exceeds the 5-day concern threshold. Suggest: (1) direct phone outreach today, (2) confirm device/app is functioning, (3) review social factors that may be interfering with engagement.'
+    recommendation: 'Patient has not completed scheduled check-ins. Silence in a hypertensive patient is a clinical signal worth escalating. Suggest: (1) automated outreach text, (2) nurse call if no response by EOD, (3) flag for in-person welfare check if 5+ days elapse.',
+    bullets: [
+      'Hypertensive patient — 3d silent, missed scheduled check-ins',
+      'Last vitals (Apr 6) were trending; no data since',
+      'Next step: automated text now, nurse call if silent by EOD'
+    ]
   }
 ];
 
@@ -450,12 +548,12 @@ export const mockPhysicians: Physician[] = [
     name: 'Dr. Sarah Mitchell',
     specialty: 'Primary Care',
     avatar: 'SM',
-    totalPatients: 5,
-    activePatients: 5,
-    availableSlots: 8, // Can take 8 more patients due to efficiencies
-    weeklyCheckIns: 12,
-    appointmentsSaved: 3,
-    timeSavedHours: 4.5
+    totalPatients: 13,
+    activePatients: 13,
+    availableSlots: 5, // Can take 5 more patients due to efficiencies
+    weeklyCheckIns: 28,
+    appointmentsSaved: 5,
+    timeSavedHours: 7.5
   },
   {
     id: 'doc2',
@@ -552,8 +650,8 @@ export const mockWaitingPatients: WaitingPatient[] = [
 export const mockPatientAssignments: PatientAssignment[] = [
   {
     id: 'a1',
-    patientId: 'p5',
-    patientName: 'Linda Thompson',
+    patientId: 'p13',
+    patientName: 'Aisha Okafor',
     physicianId: 'doc1',
     assignedDate: '2026-04-09T07:30:00',
     assignedBy: 'Admin - Jennifer Kim',

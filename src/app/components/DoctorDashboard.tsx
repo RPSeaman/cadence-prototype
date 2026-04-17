@@ -10,9 +10,11 @@ import {
   UserPlus,
   Eye,
   EyeOff,
-  EyeIcon,
   BellOff,
-  DollarSign
+  DollarSign,
+  ChevronDown,
+  ChevronUp,
+  Users
 } from 'lucide-react';
 import {
   mockPatients,
@@ -33,13 +35,13 @@ import BPTrendChart from './BPTrendChart';
 import QuickNotes from './QuickNotes';
 import EMRFrame from './EMRFrame';
 
-type FilterKey = 'flagged' | 'non-responsive' | 'all' | 'stable';
+type FilterKey = 'flagged' | 'non-responsive' | 'stable' | 'all';
 
 const TODAY = new Date('2026-04-09');
 
 export default function DoctorDashboard() {
   const navigate = useNavigate();
-  const [filter, setFilter] = useState<FilterKey>('flagged'); // Flagged-First default
+  const [filter, setFilter] = useState<FilterKey>('flagged');
   const [appointmentModal, setAppointmentModal] = useState<{
     show: boolean;
     patient: typeof mockPatients[0] | null;
@@ -48,7 +50,8 @@ export default function DoctorDashboard() {
   const [dismissedAssignments, setDismissedAssignments] = useState<string[]>([]);
   const [clinicalNotes, setClinicalNotes] = useState<ClinicalNote[]>(mockClinicalNotes);
   const [reviewedPatients, setReviewedPatients] = useState<string[]>([]);
-  const [expandedCharts, setExpandedCharts] = useState<string[]>([]);
+  const [expandedRows, setExpandedRows] = useState<string[]>([]);
+  const [showTrendFor, setShowTrendFor] = useState<string[]>([]);
 
   const currentPhysicianId = 'doc1';
   const newAssignments = mockPatientAssignments.filter(
@@ -56,10 +59,6 @@ export default function DoctorDashboard() {
   );
 
   const dismissAssignment = (id: string) => setDismissedAssignments([...dismissedAssignments, id]);
-
-  const todayCheckIns = mockCheckIns.filter(
-    (c) => format(new Date(c.timestamp), 'yyyy-MM-dd') === '2026-04-09'
-  );
 
   const urgentFlags = mockFlags.filter((f) => f.priority === 'urgent' || f.priority === 'review');
   const silentFlags = mockFlags.filter((f) => f.priority === 'non-responsive');
@@ -76,15 +75,6 @@ export default function DoctorDashboard() {
       : filter === 'stable'
       ? stablePatients
       : mockPatients;
-
-  const getFlagStyle = (flag?: DoctorFlag) => {
-    if (!flag) return { bg: 'bg-gray-50 border-gray-200', icon: <CheckCircle className="w-5 h-5 text-green-600" /> };
-    if (flag.priority === 'urgent')
-      return { bg: 'bg-red-50 border-red-200', icon: <AlertCircle className="w-5 h-5 text-red-600" /> };
-    if (flag.priority === 'non-responsive')
-      return { bg: 'bg-slate-50 border-slate-300', icon: <BellOff className="w-5 h-5 text-slate-600" /> };
-    return { bg: 'bg-amber-50 border-amber-200', icon: <TrendingUp className="w-5 h-5 text-amber-600" /> };
-  };
 
   const flagLabel = (flag: DoctorFlag) => {
     if (flag.priority === 'urgent') return 'Urgent';
@@ -128,17 +118,58 @@ export default function DoctorDashboard() {
     }
   };
 
-  const toggleChartExpanded = (patientId: string) => {
-    setExpandedCharts((prev) =>
+  const toggleRowExpanded = (patientId: string) => {
+    setExpandedRows((prev) =>
       prev.includes(patientId) ? prev.filter((id) => id !== patientId) : [...prev, patientId]
     );
   };
 
-  const filterTabs: { key: FilterKey; label: string; count: number; tone: string }[] = [
-    { key: 'flagged', label: 'Requires Action', count: allFlags.length, tone: 'bg-red-600 text-white' },
-    { key: 'non-responsive', label: 'Non-Responsive', count: silentFlags.length, tone: 'bg-slate-700 text-white' },
-    { key: 'stable', label: 'Stable', count: stablePatients.length, tone: 'bg-green-600 text-white' },
-    { key: 'all', label: 'All Patients', count: mockPatients.length, tone: 'bg-blue-600 text-white' }
+  const toggleTrend = (patientId: string) => {
+    setShowTrendFor((prev) =>
+      prev.includes(patientId) ? prev.filter((id) => id !== patientId) : [...prev, patientId]
+    );
+  };
+
+  const tiles: {
+    key: FilterKey;
+    label: string;
+    count: number;
+    icon: JSX.Element;
+    activeClasses: string;
+    iconBg: string;
+  }[] = [
+    {
+      key: 'flagged',
+      label: 'Requires Action',
+      count: allFlags.length,
+      icon: <AlertCircle className="w-5 h-5 text-red-600" />,
+      activeClasses: 'border-red-500 ring-2 ring-red-100',
+      iconBg: 'bg-red-100'
+    },
+    {
+      key: 'non-responsive',
+      label: 'Non-Responsive',
+      count: silentFlags.length,
+      icon: <BellOff className="w-5 h-5 text-slate-600" />,
+      activeClasses: 'border-slate-500 ring-2 ring-slate-100',
+      iconBg: 'bg-slate-100'
+    },
+    {
+      key: 'stable',
+      label: 'Stable',
+      count: stablePatients.length,
+      icon: <CheckCircle className="w-5 h-5 text-green-600" />,
+      activeClasses: 'border-green-500 ring-2 ring-green-100',
+      iconBg: 'bg-green-100'
+    },
+    {
+      key: 'all',
+      label: 'All Patients',
+      count: mockPatients.length,
+      icon: <Users className="w-5 h-5 text-blue-600" />,
+      activeClasses: 'border-blue-500 ring-2 ring-blue-100',
+      iconBg: 'bg-blue-100'
+    }
   ];
 
   return (
@@ -160,284 +191,91 @@ export default function DoctorDashboard() {
             </div>
           </div>
           <div>
-            <h1 className="text-gray-900 text-2xl">Flagged Patients — Today</h1>
-            <p className="text-gray-600 mt-1">Thursday, April 9, 2026 · Showing only patients that need your attention</p>
+            <h1 className="text-gray-900 text-2xl">Patient Dashboard</h1>
+            <p className="text-gray-600 mt-1">Thursday, April 9, 2026 · Last sync 8:42 AM</p>
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Stats Overview */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
-                <AlertCircle className="w-5 h-5 text-red-600" />
-              </div>
-              <div>
-                <p className="text-gray-600">Requires Action</p>
-                <p className="text-gray-900 mt-1">{allFlags.length}</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
-                <BellOff className="w-5 h-5 text-slate-600" />
-              </div>
-              <div>
-                <p className="text-gray-600">Non-Responsive</p>
-                <p className="text-gray-900 mt-1">{silentFlags.length}</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
-                <CheckCircle className="w-5 h-5 text-green-600" />
-              </div>
-              <div>
-                <p className="text-gray-600">Check-ins Today</p>
-                <p className="text-gray-900 mt-1">{todayCheckIns.length}</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                <Clock className="w-5 h-5 text-gray-600" />
-              </div>
-              <div>
-                <p className="text-gray-600">Time Saved</p>
-                <p className="text-gray-900 mt-1">~4.5 hrs</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Requires Action — urgent & review */}
-        {urgentFlags.length > 0 && (
-          <div className="mb-10">
-            <h2 className="text-gray-900 mb-4">Requires Action</h2>
-            <div className="space-y-4">
-              {urgentFlags.map((flag) => {
-                const patient = mockPatients.find((p) => p.id === flag.patientId);
-                const style = getFlagStyle(flag);
-                return (
-                  <div key={flag.patientId} className={`rounded-xl border p-6 ${style.bg}`}>
-                    <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0 mt-1">{style.icon}</div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center flex-wrap gap-x-3 gap-y-1 mb-2">
-                          <h3
-                            className="text-gray-900 hover:text-blue-600 cursor-pointer transition-colors"
-                            onClick={() => navigate(`/patient/${flag.patientId}`)}
-                          >
-                            {patient?.name}
-                          </h3>
-                          <span className="text-gray-500 text-sm">MRN {patient?.mrn}</span>
-                          <span className="text-gray-400">•</span>
-                          <span className="text-gray-500 text-sm">{patient?.condition}</span>
-                          {patient?.ccmRpmEligible && <CcmRpmPill />}
-                        </div>
-                        <p className="text-gray-700 mb-4">{flag.message}</p>
-                        <div className="bg-white rounded-lg p-4 border border-gray-200 mb-4">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Sparkle />
-                            <p className="text-gray-600 text-sm">AI-Generated Summary</p>
-                          </div>
-                          <p className="text-gray-900">{flag.recommendation}</p>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            onClick={() =>
-                              setAppointmentModal({
-                                show: true,
-                                patient: patient || null,
-                                actionType: 'expedite'
-                              })
-                            }
-                            className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                          >
-                            <CalendarClock className="w-4 h-4" />
-                            Expedite Appointment
-                          </button>
-                          <button
-                            onClick={() => navigate(`/patient/${flag.patientId}`)}
-                            className="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                          >
-                            View Full Details
-                          </button>
-                        </div>
-                      </div>
-                      <div className="flex-shrink-0 text-right">
-                        <p className="text-gray-500 text-sm">{format(new Date(flag.timestamp), 'h:mm a')}</p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Non-Responsive — silent signal */}
-        {silentFlags.length > 0 && (
-          <div className="mb-10">
-            <div className="flex items-center gap-3 mb-4">
-              <h2 className="text-gray-900">Non-Responsive</h2>
-              <span className="text-gray-500 text-sm">Silence is a clinical signal</span>
-            </div>
-            <div className="space-y-4">
-              {silentFlags.map((flag) => {
-                const patient = mockPatients.find((p) => p.id === flag.patientId);
-                const silentDays = patient?.lastCheckIn
-                  ? differenceInCalendarDays(TODAY, new Date(patient.lastCheckIn))
-                  : null;
-                return (
-                  <div key={flag.patientId} className="rounded-xl border border-slate-300 bg-slate-50 p-6">
-                    <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0 mt-1">
-                        <BellOff className="w-5 h-5 text-slate-600" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center flex-wrap gap-x-3 gap-y-1 mb-2">
-                          <h3
-                            className="text-gray-900 hover:text-blue-600 cursor-pointer transition-colors"
-                            onClick={() => navigate(`/patient/${flag.patientId}`)}
-                          >
-                            {patient?.name}
-                          </h3>
-                          <span className="text-gray-500 text-sm">MRN {patient?.mrn}</span>
-                          <span className="text-gray-400">•</span>
-                          <span className="text-gray-500 text-sm">{patient?.condition}</span>
-                          {silentDays !== null && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 text-xs">
-                              <Clock className="w-3 h-3" />
-                              Silent {silentDays}d
-                            </span>
-                          )}
-                          {patient?.ccmRpmEligible && <CcmRpmPill />}
-                        </div>
-                        <p className="text-gray-700 mb-4">{flag.message}</p>
-                        <div className="bg-white rounded-lg p-4 border border-gray-200 mb-4">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Sparkle />
-                            <p className="text-gray-600 text-sm">AI-Generated Summary</p>
-                          </div>
-                          <p className="text-gray-900">{flag.recommendation}</p>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            className="flex items-center gap-2 px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-800 transition-colors"
-                            onClick={() =>
-                              toast.success('Outreach queued', {
-                                description: `Automated text + nurse call queued for ${patient?.name}.`
-                              })
-                            }
-                          >
-                            <Activity className="w-4 h-4" />
-                            Trigger Outreach
-                          </button>
-                          <button
-                            onClick={() => navigate(`/patient/${flag.patientId}`)}
-                            className="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                          >
-                            View Full Details
-                          </button>
-                        </div>
-                      </div>
-                      <div className="flex-shrink-0 text-right">
-                        <p className="text-gray-500 text-sm">{format(new Date(flag.timestamp), 'h:mm a')}</p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* New Patient Assignments */}
-        {newAssignments.length > 0 && (
-          <div className="mb-10">
-            <h2 className="text-gray-900 mb-4">New Patient Assignments</h2>
-            <div className="space-y-3">
-              {newAssignments.map((assignment) => {
-                const patient = mockPatients.find((p) => p.id === assignment.patientId);
-                return (
-                  <div key={assignment.id} className="rounded-xl border border-gray-200 p-5 bg-white">
-                    <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0 mt-1">
-                        <UserPlus className="w-5 h-5 text-blue-600" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center flex-wrap gap-x-3 gap-y-1 mb-2">
-                          <h3
-                            className="text-gray-900 hover:text-blue-600 cursor-pointer transition-colors"
-                            onClick={() => navigate(`/patient/${assignment.patientId}`)}
-                          >
-                            {patient?.name}
-                          </h3>
-                          <span className="text-gray-500 text-sm">MRN {patient?.mrn}</span>
-                          <span className="text-gray-400">•</span>
-                          <span className="text-gray-500 text-sm">{patient?.condition}</span>
-                          {patient?.ccmRpmEligible && <CcmRpmPill />}
-                        </div>
-                        <p className="text-gray-700 mb-3">New patient assigned to you.</p>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => navigate(`/patient/${assignment.patientId}`)}
-                            className="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                          >
-                            View Full Details
-                          </button>
-                          <button
-                            onClick={() => dismissAssignment(assignment.id)}
-                            className="px-4 py-2 bg-gray-100 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors"
-                          >
-                            Dismiss
-                          </button>
-                        </div>
-                      </div>
-                      <div className="flex-shrink-0 text-right">
-                        <p className="text-gray-500 text-sm">
-                          {format(new Date(assignment.assignedDate), 'h:mm a')}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Filter Tabs */}
-        <div className="flex items-center gap-2 mb-5 flex-wrap">
-          {filterTabs.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setFilter(tab.key)}
-              className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-                filter === tab.key
-                  ? tab.tone
-                  : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
-              }`}
-            >
-              {tab.label}
-              <span
-                className={`inline-flex items-center justify-center min-w-[1.5rem] h-6 px-1.5 rounded-full text-xs ${
-                  filter === tab.key ? 'bg-white/20' : 'bg-gray-100 text-gray-600'
+        {/* Stat tiles — clickable filter shortcuts */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          {tiles.map((tile) => {
+            const active = filter === tile.key;
+            return (
+              <button
+                key={tile.key}
+                onClick={() => setFilter(tile.key)}
+                aria-pressed={active}
+                className={`text-left bg-white rounded-xl border p-5 transition-all hover:shadow-sm ${
+                  active ? tile.activeClasses : 'border-gray-200'
                 }`}
               >
-                {tab.count}
-              </span>
-            </button>
-          ))}
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-10 h-10 rounded-lg flex items-center justify-center ${tile.iconBg}`}
+                  >
+                    {tile.icon}
+                  </div>
+                  <div>
+                    <p className="text-gray-600 text-sm">{tile.label}</p>
+                    <p className="text-gray-900 text-2xl mt-0.5">{tile.count}</p>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
         </div>
 
-        {/* Patient List */}
+        {/* New Patient Assignments — slim banner */}
+        {newAssignments.length > 0 && (
+          <div className="mb-6 space-y-2">
+            {newAssignments.map((assignment) => {
+              const patient = mockPatients.find((p) => p.id === assignment.patientId);
+              return (
+                <div
+                  key={assignment.id}
+                  className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-blue-50 border border-blue-100 text-sm"
+                >
+                  <UserPlus className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                  <span className="text-gray-700 flex-1 min-w-0 truncate">
+                    <span className="text-blue-700">New assignment:</span>{' '}
+                    <span className="text-gray-900">{patient?.name}</span>
+                    <span className="text-gray-500"> · {patient?.condition}</span>
+                  </span>
+                  <button
+                    onClick={() => navigate(`/patient/${assignment.patientId}`)}
+                    className="text-blue-700 hover:text-blue-800 hover:underline flex-shrink-0"
+                  >
+                    View
+                  </button>
+                  <button
+                    onClick={() => dismissAssignment(assignment.id)}
+                    className="text-gray-500 hover:text-gray-700 flex-shrink-0"
+                    aria-label="Dismiss"
+                  >
+                    ✕
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Section label reflects active filter */}
+        <div className="flex items-baseline justify-between mb-3">
+          <h2 className="text-gray-900">
+            {filter === 'flagged' && 'Requires Action'}
+            {filter === 'non-responsive' && 'Non-Responsive'}
+            {filter === 'stable' && 'Stable Patients'}
+            {filter === 'all' && 'All Patients'}
+          </h2>
+          {filter === 'non-responsive' && (
+            <span className="text-gray-500 text-sm">Silence is a clinical signal</span>
+          )}
+        </div>
+
+        {/* Patient list — primary surface */}
         <div className="space-y-3">
           {displayPatients.length === 0 && (
             <div className="bg-white rounded-xl border border-gray-200 p-10 text-center">
@@ -458,11 +296,13 @@ export default function DoctorDashboard() {
               .filter((c) => c.patientId === patient.id)
               .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
             const patientVitals = mockVitals[patient.id] || [];
-            const isExpanded = expandedCharts.includes(patient.id);
+            const isExpanded = expandedRows.includes(patient.id);
+            const isTrendShown = showTrendFor.includes(patient.id);
             const isReviewed = reviewedPatients.includes(patient.id);
             const silentDays = patient.lastCheckIn
               ? differenceInCalendarDays(TODAY, new Date(patient.lastCheckIn))
               : null;
+            const hasSummary = flag && flag.bullets.length > 0;
 
             return (
               <div
@@ -514,6 +354,12 @@ export default function DoctorDashboard() {
                               {flagLabel(flag)}
                             </span>
                           )}
+                          {flag?.priority === 'non-responsive' && silentDays !== null && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 text-xs">
+                              <Clock className="w-3 h-3" />
+                              Silent {silentDays}d
+                            </span>
+                          )}
                           {patient.ccmRpmEligible && <CcmRpmPill />}
                           {isReviewed && (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-100 text-green-700 text-xs">
@@ -524,11 +370,18 @@ export default function DoctorDashboard() {
                         </div>
                         <p className="text-gray-600 text-sm mb-2">{patient.condition}</p>
                         <div className="flex items-center flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
-                          <span>Last visit: {format(new Date(patient.lastVisit), 'MMM d, yyyy')}</span>
+                          <span>
+                            Last visit:{' '}
+                            {patient.lastVisit
+                              ? format(new Date(patient.lastVisit), 'MMM d, yyyy')
+                              : '—'}
+                          </span>
                           {patient.nextScheduled && (
                             <>
                               <span>•</span>
-                              <span>Next: {format(new Date(patient.nextScheduled), 'MMM d, yyyy')}</span>
+                              <span>
+                                Next appt: {format(new Date(patient.nextScheduled), 'MMM d, yyyy')}
+                              </span>
                             </>
                           )}
                           {patient.lastCheckIn && (
@@ -541,26 +394,38 @@ export default function DoctorDashboard() {
                                   : silentDays === 1
                                   ? 'Yesterday'
                                   : `${silentDays}d ago`}
+                                {lastCheckIn && silentDays !== null && silentDays <= 1
+                                  ? ` at ${format(new Date(lastCheckIn.timestamp), 'h:mm a')}`
+                                  : ''}
                               </span>
-                            </>
-                          )}
-                          {lastCheckIn && (
-                            <>
-                              <span>•</span>
-                              <span>{format(new Date(lastCheckIn.timestamp), 'MMM d, h:mm a')}</span>
                             </>
                           )}
                         </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
+                      {hasSummary && (
+                        <button
+                          onClick={() => toggleRowExpanded(patient.id)}
+                          className="px-3 py-1.5 text-xs bg-blue-50 text-blue-700 rounded hover:bg-blue-100 transition-colors flex items-center gap-1.5"
+                          aria-expanded={isExpanded}
+                        >
+                          <Sparkle />
+                          {isExpanded ? 'Hide' : 'AI Summary'}
+                          {isExpanded ? (
+                            <ChevronUp className="w-3.5 h-3.5" />
+                          ) : (
+                            <ChevronDown className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                      )}
                       {patientVitals.length > 0 && patientVitals[0].systolic && (
                         <button
-                          onClick={() => toggleChartExpanded(patient.id)}
-                          className="px-3 py-1.5 text-xs bg-blue-50 text-blue-700 rounded hover:bg-blue-100 transition-colors flex items-center gap-1.5"
+                          onClick={() => toggleTrend(patient.id)}
+                          className="px-3 py-1.5 text-xs bg-gray-50 text-gray-700 rounded hover:bg-gray-100 transition-colors flex items-center gap-1.5"
                         >
                           <TrendingUp className="w-3.5 h-3.5" />
-                          {isExpanded ? 'Hide' : 'Show'} Trend
+                          {isTrendShown ? 'Hide Trend' : 'Trend'}
                         </button>
                       )}
                       <button
@@ -571,20 +436,72 @@ export default function DoctorDashboard() {
                             : 'bg-green-50 text-green-700 hover:bg-green-100'
                         }`}
                       >
-                        {isReviewed ? <EyeOff className="w-3.5 h-3.5" /> : <EyeIcon className="w-3.5 h-3.5" />}
+                        {isReviewed ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                         {isReviewed ? 'Unmark' : 'Mark Reviewed'}
                       </button>
                     </div>
                   </div>
 
-                  {isExpanded && patientVitals.length > 0 && (
+                  {isExpanded && flag && (
+                    <div className="mb-4 p-4 bg-blue-50/40 rounded-lg border border-blue-100">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Sparkle />
+                        <p className="text-gray-700 text-sm">AI-Generated Summary</p>
+                      </div>
+                      <ul className="space-y-1.5 mb-3">
+                        {flag.bullets.map((b, i) => (
+                          <li key={i} className="flex items-start gap-2 text-gray-900 text-sm">
+                            <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0" />
+                            <span>{b}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <div className="flex flex-wrap gap-2">
+                        {flag.priority === 'non-responsive' ? (
+                          <button
+                            onClick={() =>
+                              toast.success('Outreach queued', {
+                                description: `Automated text + nurse call queued for ${patient.name}.`
+                              })
+                            }
+                            className="flex items-center gap-2 px-3 py-1.5 text-xs bg-slate-700 text-white rounded hover:bg-slate-800 transition-colors"
+                          >
+                            <Activity className="w-3.5 h-3.5" />
+                            Trigger Outreach
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() =>
+                              setAppointmentModal({
+                                show: true,
+                                patient,
+                                actionType: 'expedite'
+                              })
+                            }
+                            className="flex items-center gap-2 px-3 py-1.5 text-xs bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                          >
+                            <CalendarClock className="w-3.5 h-3.5" />
+                            Expedite Appointment
+                          </button>
+                        )}
+                        <button
+                          onClick={() => navigate(`/patient/${patient.id}`)}
+                          className="px-3 py-1.5 text-xs bg-white text-gray-700 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+                        >
+                          Open Chart
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {isTrendShown && patientVitals.length > 0 && (
                     <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
                       <h4 className="text-sm font-medium text-gray-700 mb-3">Blood Pressure Trend</h4>
                       <BPTrendChart vitals={patientVitals} compact />
                     </div>
                   )}
 
-                  <QuickNotes patientId={patient.id} notes={clinicalNotes} onAddNote={handleAddNote} />
+                  <QuickNotes patientId={patient.id} notes={clinicalNotes} onAddNote={handleAddNote} hideList />
                 </div>
               </div>
             );

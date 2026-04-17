@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { ArrowLeft, Calendar, Activity, AlertCircle, MessageSquare, TrendingUp, CalendarClock, CheckCircle, ShieldCheck, DollarSign } from 'lucide-react';
-import { mockPatients, mockCheckIns, mockVitals, mockFlags } from '../data/mockData';
+import { mockPatients, mockCheckIns, mockVitals, mockFlags, mockClinicalNotes, ClinicalNote } from '../data/mockData';
+import QuickNotes from './QuickNotes';
 import { format } from 'date-fns';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import AppointmentActionModal, { AppointmentActionData } from './AppointmentActionModal';
@@ -24,6 +25,21 @@ export default function PatientDetail() {
   const flag = mockFlags.find(f => f.patientId === patientId);
   const [reviewed, setReviewed] = useState(false);
   const reviewedAt = reviewed ? new Date() : null;
+  const [clinicalNotes, setClinicalNotes] = useState<ClinicalNote[]>(mockClinicalNotes);
+
+  const handleAddNote = (pid: string, text: string) => {
+    setClinicalNotes([
+      ...clinicalNotes,
+      {
+        id: `n${Date.now()}`,
+        patientId: pid,
+        text,
+        author: 'Dr. Sarah Mitchell',
+        timestamp: new Date().toISOString()
+      }
+    ]);
+    toast.success('Note added');
+  };
 
   const handleAppointmentAction = (data: AppointmentActionData) => {
     if (data.actionType === 'expedite') {
@@ -111,7 +127,10 @@ export default function PatientDetail() {
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-gray-500" />
                     <span className="text-gray-600">
-                      Last visit: {format(new Date(patient.lastVisit), 'MMMM d, yyyy')}
+                      Last visit:{' '}
+                      {patient.lastVisit
+                        ? format(new Date(patient.lastVisit), 'MMMM d, yyyy')
+                        : 'No visits yet'}
                     </span>
                   </div>
                   {reviewed && reviewedAt && (
@@ -302,6 +321,15 @@ export default function PatientDetail() {
                 )}
               </div>
             )}
+
+            {/* Clinical Notes */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <QuickNotes
+                patientId={patient.id}
+                notes={clinicalNotes}
+                onAddNote={handleAddNote}
+              />
+            </div>
 
             {/* Quick Stats */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">

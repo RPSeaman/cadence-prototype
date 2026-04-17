@@ -25,7 +25,7 @@ export default function BPTrendChart({ vitals, compact = false }: BPTrendChartPr
 
   return (
     <ResponsiveContainer width="100%" height={compact ? 200 : 300}>
-      <LineChart data={data} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+      <LineChart data={data} margin={{ top: 5, right: 64, left: 0, bottom: 5 }}>
         <CartesianGrid key="cartesian-grid" strokeDasharray="3 3" stroke="#e5e7eb" />
         <XAxis 
           key="x-axis"
