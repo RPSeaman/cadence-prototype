@@ -1,13 +1,15 @@
 import { useState } from 'react';
-import { 
-  Users, 
-  UserPlus, 
-  Clock, 
-  TrendingUp, 
-  Activity, 
+import {
+  Users,
+  UserPlus,
+  Clock,
+  TrendingUp,
+  Activity,
   CheckCircle,
   AlertCircle,
-  Calendar
+  Calendar,
+  DollarSign,
+  Timer
 } from 'lucide-react';
 import { 
   mockPhysicians, 
@@ -32,6 +34,17 @@ export default function AdminDashboard() {
   const totalAppointmentsSaved = mockPhysicians.reduce((sum, doc) => sum + doc.appointmentsSaved, 0);
   const totalTimeSaved = mockPhysicians.reduce((sum, doc) => sum + doc.timeSavedHours, 0);
   const urgentWaiting = mockWaitingPatients.filter(p => p.priority === 'urgent').length;
+
+  // CCM/RPM reimbursement (derived from patient count — blended CPT 99490 + 99457 avg ~$118/pt/mo)
+  const ccmEligible = Math.round(totalPatients * 0.73);
+  const ccmAtRisk = Math.max(2, Math.round(totalPatients * 0.1));
+  const ccmBillableMinutes = ccmEligible * 25;
+  const ccmDollarsCaptured = ccmEligible * 118;
+  const ccmAtRiskDollars = ccmAtRisk * 118;
+
+  // Operational translation of time saved (≈1.3 visits per hour × $400 avg reimbursement)
+  const recoverableVisits = Math.round(totalTimeSaved * 1.3);
+  const recoverableDollars = recoverableVisits * 400;
 
   const handleAssignPatient = () => {
     if (selectedWaitingPatient && selectedPhysician) {
@@ -129,8 +142,54 @@ export default function AdminDashboard() {
               <div>
                 <p className="text-gray-600">Time Saved</p>
                 <p className="text-gray-900 mt-1">{totalTimeSaved.toFixed(1)} hrs</p>
+                <p className="text-teal-700 text-xs mt-1">
+                  ≈ {recoverableVisits} visits · ~${recoverableDollars.toLocaleString()} capacity
+                </p>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* CCM/RPM Reimbursement */}
+        <div className="mb-8 bg-gradient-to-br from-emerald-50 to-blue-50 rounded-lg border border-emerald-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-emerald-700" />
+              <h3 className="text-gray-900">Billable Care · CCM / RPM</h3>
+            </div>
+            <span className="text-gray-500 text-xs">April 2026 · CPT 99490 + 99457</span>
+          </div>
+          <div className="grid grid-cols-4 gap-4">
+            <div>
+              <p className="text-gray-600 text-sm">Captured this month</p>
+              <p className="text-gray-900 mt-1 text-2xl">${ccmDollarsCaptured.toLocaleString()}</p>
+              <p className="text-emerald-700 text-xs mt-1">{ccmEligible} eligible patients</p>
+            </div>
+            <div>
+              <p className="text-gray-600 text-sm">Billable minutes logged</p>
+              <p className="text-gray-900 mt-1 text-2xl">{ccmBillableMinutes.toLocaleString()}</p>
+              <p className="text-gray-500 text-xs mt-1">avg 25 min / eligible pt</p>
+            </div>
+            <div>
+              <p className="text-gray-600 text-sm">At-risk of ineligibility</p>
+              <div className="flex items-baseline gap-1.5 mt-1">
+                <p className="text-amber-700 text-2xl">{ccmAtRisk}</p>
+                <p className="text-gray-500 text-sm">patients</p>
+              </div>
+              <p className="text-amber-700 text-xs mt-1">below 20-min threshold</p>
+            </div>
+            <div>
+              <p className="text-gray-600 text-sm">At-risk revenue</p>
+              <p className="text-gray-900 mt-1 text-2xl">${ccmAtRiskDollars.toLocaleString()}</p>
+              <p className="text-gray-500 text-xs mt-1">recoverable if re-engaged</p>
+            </div>
+          </div>
+          <div className="mt-4 pt-4 border-t border-emerald-200 flex items-center justify-between">
+            <p className="text-gray-600 text-sm flex items-center gap-1.5">
+              <Timer className="w-4 h-4 text-gray-500" />
+              Auto-tracked from Cadence check-ins — no manual logging
+            </p>
+            <button className="text-emerald-700 text-sm hover:underline">View at-risk patients →</button>
           </div>
         </div>
 

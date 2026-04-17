@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Calendar, Activity, MessageSquare, FileText, Clock, TrendingUp, Heart } from 'lucide-react';
+import { Calendar, Activity, MessageSquare, FileText, Clock, TrendingUp, Heart, AlertTriangle, Phone, Check, X } from 'lucide-react';
 import { format } from 'date-fns';
 import AIChatAssistant from './AIChatAssistant';
 import { mockCheckIns, mockVitals } from '../data/mockData';
@@ -13,6 +13,7 @@ import CheckInHistory from './CheckInHistory';
 export default function PatientDashboard() {
   const [showChat, setShowChat] = useState(false);
   const [initialQuestion, setInitialQuestion] = useState('');
+  const [escalation, setEscalation] = useState<null | 'menu' | 'sent'>(null);
   const navigate = useNavigate();
 
   // Mock patient data (Margaret Chen)
@@ -223,11 +224,90 @@ export default function PatientDashboard() {
                 <button className="w-full px-4 py-2 bg-white text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                   View Medical Records
                 </button>
+                <button
+                  onClick={() => setEscalation('menu')}
+                  className="w-full px-4 py-3 mt-2 flex items-center justify-center gap-2 bg-red-50 text-red-700 border-2 border-red-200 rounded-lg hover:bg-red-100 transition-colors"
+                >
+                  <AlertTriangle className="w-4 h-4" />
+                  Something feels off
+                </button>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Escalation Modal */}
+      {escalation && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-6">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            {escalation === 'menu' ? (
+              <>
+                <div className="flex items-start justify-between mb-5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                      <AlertTriangle className="w-5 h-5 text-red-600" />
+                    </div>
+                    <div>
+                      <h2 className="text-gray-900 text-lg">Something feels off?</h2>
+                      <p className="text-gray-500 text-sm mt-0.5">We'll route this to Dr. Mitchell.</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setEscalation(null)} className="text-gray-400 hover:text-gray-600 p-1">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="space-y-2 mb-4">
+                  <button
+                    onClick={() => setEscalation('sent')}
+                    className="w-full text-left px-4 py-4 border-2 border-red-200 rounded-xl hover:bg-red-50 transition-colors"
+                  >
+                    <p className="text-gray-900">Message my care team</p>
+                    <p className="text-gray-500 text-xs mt-0.5">Response within a few hours</p>
+                  </button>
+                  <button
+                    className="w-full flex items-center gap-3 px-4 py-4 border-2 border-gray-200 rounded-xl hover:bg-gray-50 transition-colors text-left"
+                  >
+                    <Phone className="w-5 h-5 text-gray-500" />
+                    <div>
+                      <p className="text-gray-900">Call the office</p>
+                      <p className="text-gray-500 text-xs">(555) 123-4567</p>
+                    </div>
+                  </button>
+                  <button
+                    className="w-full flex items-center gap-3 px-4 py-4 border-2 border-red-300 bg-red-50 rounded-xl hover:bg-red-100 transition-colors text-left"
+                  >
+                    <Phone className="w-5 h-5 text-red-700" />
+                    <div>
+                      <p className="text-red-800">Emergency — 911</p>
+                      <p className="text-red-700 text-xs">Chest pain, trouble breathing</p>
+                    </div>
+                  </button>
+                </div>
+                <button onClick={() => setEscalation(null)} className="w-full py-2 text-gray-500 text-sm hover:text-gray-700">
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <div className="text-center py-4">
+                <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3">
+                  <Check className="w-7 h-7 text-green-600" />
+                </div>
+                <h2 className="text-gray-900 text-lg mb-1">Message sent</h2>
+                <p className="text-gray-600 text-sm mb-6">
+                  Dr. Mitchell's team got it. Expect a response within a few hours.
+                </p>
+                <button
+                  onClick={() => setEscalation(null)}
+                  className="w-full py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
+                >
+                  OK
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* AI Chat Modal */}
       {showChat && (

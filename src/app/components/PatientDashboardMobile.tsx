@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Calendar, Activity, Heart, Menu, X, User, Home, FileText, Sparkles, ShieldCheck, AlertTriangle, Phone, Check } from 'lucide-react';
+import { Calendar, Activity, Heart, Menu, X, User, Home, FileText, Sparkles, ShieldCheck, AlertTriangle, Phone, Check, TrendingUp, TrendingDown, Minus, StickyNote } from 'lucide-react';
 import { format } from 'date-fns';
 import AIChatAssistant from './AIChatAssistant';
 import { mockCheckIns, mockVitals } from '../data/mockData';
@@ -33,6 +33,15 @@ export default function PatientDashboardMobile() {
   }));
 
   const latestVitals = myVitals[myVitals.length - 1];
+  const previousVitals = myVitals[myVitals.length - 2];
+  const systolicDelta = latestVitals && previousVitals ? latestVitals.systolic - previousVitals.systolic : 0;
+  const bpTrend = systolicDelta > 2 ? 'up' : systolicDelta < -2 ? 'down' : 'steady';
+  const bpFraming =
+    bpTrend === 'down'
+      ? `Down ${Math.abs(systolicDelta)} from last week`
+      : bpTrend === 'up'
+      ? `Up ${systolicDelta} from last week · keep tracking`
+      : 'Steady this week';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center p-8">
@@ -103,13 +112,22 @@ export default function PatientDashboardMobile() {
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-white rounded-xl border border-gray-200 p-4">
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center">
-                <Heart className="w-4 h-4 text-red-600" />
+              <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
+                <Heart className="w-4 h-4 text-red-500" />
               </div>
               <p className="text-gray-600">BP</p>
             </div>
-            <p className="text-gray-900 mb-1">{latestVitals?.systolic}/{latestVitals?.diastolic}</p>
-            <p className="text-gray-500">mmHg</p>
+            <div className="flex items-baseline gap-1.5 mb-1">
+              <p className="text-gray-900">{latestVitals?.systolic}/{latestVitals?.diastolic}</p>
+              {bpTrend === 'down' && <TrendingDown className="w-4 h-4 text-green-600" />}
+              {bpTrend === 'up' && <TrendingUp className="w-4 h-4 text-amber-600" />}
+              {bpTrend === 'steady' && <Minus className="w-4 h-4 text-gray-400" />}
+            </div>
+            <p className={`text-xs leading-tight ${
+              bpTrend === 'down' ? 'text-green-700' : bpTrend === 'up' ? 'text-amber-700' : 'text-gray-500'
+            }`}>
+              {bpFraming}
+            </p>
           </div>
 
           <div className="bg-white rounded-xl border border-gray-200 p-4">
@@ -225,14 +243,21 @@ export default function PatientDashboardMobile() {
               Message
             </button>
           </div>
-          {nextAppointment && (
-            <div className="mt-3 pt-3 border-t border-gray-200">
+          <div className="mt-3 pt-3 border-t border-gray-200 space-y-2">
+            <div className="flex items-start gap-2 text-sm">
+              <StickyNote className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-gray-500 text-xs">Last note from Dr. Mitchell · Apr 8</p>
+                <p className="text-gray-700 mt-0.5">Reviewed your last check-in — no changes to your plan. Keep logging daily.</p>
+              </div>
+            </div>
+            {nextAppointment && (
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <Calendar className="w-4 h-4" />
                 <span>Next visit: {format(new Date(nextAppointment), 'MMM d, yyyy')}</span>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* Recent Check-ins */}
@@ -383,26 +408,24 @@ export default function PatientDashboardMobile() {
                     <p className="text-gray-900">Message my care team</p>
                     <p className="text-gray-500 text-xs mt-0.5">Response within a few hours</p>
                   </button>
-                  <a
-                    href="tel:5551234567"
-                    className="flex items-center gap-3 px-4 py-4 border-2 border-gray-200 rounded-2xl hover:bg-gray-50 transition-colors"
+                  <button
+                    className="w-full flex items-center gap-3 px-4 py-4 border-2 border-gray-200 rounded-2xl hover:bg-gray-50 transition-colors text-left"
                   >
                     <Phone className="w-5 h-5 text-gray-600" />
                     <div>
                       <p className="text-gray-900">Call the office</p>
                       <p className="text-gray-500 text-xs">(555) 123-4567</p>
                     </div>
-                  </a>
-                  <a
-                    href="tel:911"
-                    className="flex items-center gap-3 px-4 py-4 border-2 border-red-300 bg-red-50 rounded-2xl hover:bg-red-100 transition-colors"
+                  </button>
+                  <button
+                    className="w-full flex items-center gap-3 px-4 py-4 border-2 border-red-300 bg-red-50 rounded-2xl hover:bg-red-100 transition-colors text-left"
                   >
                     <Phone className="w-5 h-5 text-red-700" />
                     <div>
                       <p className="text-red-800">Emergency — 911</p>
                       <p className="text-red-700 text-xs">Chest pain, trouble breathing</p>
                     </div>
-                  </a>
+                  </button>
                 </div>
                 <button
                   onClick={() => setEscalation(null)}
